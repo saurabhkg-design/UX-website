@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#F8CB46">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Blinkit · assistant prototype</title>
+<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/metropolis">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --yellow:#F8CB46; --ink:#1C1C1C; --green:#0C831F; --green-tint:#F7FFF9; --blue:#256FEF;
+  --n-card:#F7F7F7; --n-border:#EDEDED; --n-chip:#F2F2F2;
+  --n-1:#1C1C1C; --n-2:#666870; --n-3:#9A9CA3;
+  --ai:#3E3047; --ai-2:#544663; --ai-line:rgba(255,255,255,.14);
+  --ai-sub:#B4A9BD;
+  --okra:'Metropolis','Poppins',system-ui,-apple-system,sans-serif;
+  --dock:200px;
+  --ph-w:390px; --ph-h:844px;   /* reference device */
+  --s:1;                        /* device scale on desktop, set by script */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;overscroll-behavior:none}
+body{font-family:var(--okra);color:var(--n-1);background:#fff;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;border:0;background:none;padding:0;color:inherit;cursor:pointer}
+
+/* On a real phone the app is the app: it fills the viewport.
+   From 560 up it becomes a 390 × 844 device, scaled to fit the window. */
+.app{display:flex;flex-direction:column;height:100dvh;width:100%;max-width:520px;margin:0 auto;
+     position:relative;overflow:hidden;background:#fff}
+
+/* ── header ── */
+.hd{background:var(--yellow);flex:none;padding:calc(env(safe-area-inset-top) + 12px) 18px 15px;
+    position:relative;z-index:6;transition:background .3s}
+.hd.dim{background:#F3E6BE}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.eta-l{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:rgba(28,28,28,.72)}
+.eta{font-size:27px;font-weight:800;letter-spacing:-.03em;line-height:1.14;margin-top:1px}
+.addr{font-size:13.5px;font-weight:500;color:rgba(28,28,28,.86);margin-top:2px}
+.menu{width:38px;height:38px;border-radius:50%;background:rgba(28,28,28,.14);flex:none;
+      display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;margin-top:4px}
+
+/* ── feed ── */
+.feed{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 0;
+      padding-bottom:calc(var(--dock) + 24px);background:#fff}
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.sec h4{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:0}
+.sec span{font-size:14px;font-weight:700;color:var(--green)}
+.srch{height:46px;border-radius:12px;background:var(--n-card);border:1px solid var(--n-border);
+      display:flex;align-items:center;padding:0 16px;color:var(--n-3);font-size:15px;margin-bottom:16px}
+
+.nar{margin:0 0 14px;animation:fade .35s both}
+.nar .l1{font-size:14.5px;line-height:1.45;color:var(--n-2);font-weight:500;margin:0}
+.nar .l2{font-size:17px;line-height:1.35;font-weight:700;letter-spacing:-.015em;margin:3px 0 0}
+.dots i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--n-3);
+        margin-left:3px;animation:blink 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.prov{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}
+.pv{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--ai)}
+.why{font-size:12.5px;font-weight:600;color:var(--ai);border:1px solid rgba(62,48,71,.30);
+     border-radius:999px;padding:7px 13px;white-space:nowrap}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 14px}
+.pc{min-width:0;animation:fade .3s both}
+.pimg{position:relative;background:var(--n-card);border:1px solid var(--n-border);
+      border-radius:14px;height:130px;overflow:hidden}
+.badge{position:absolute;top:0;left:0;background:var(--blue);color:#fff;font-size:10px;font-weight:800;
+       line-height:1.15;padding:5px 7px;border-radius:14px 0 10px 0;text-align:center}
+.pmark{position:absolute;top:8px;right:8px;border-radius:999px;font-size:9.5px;font-weight:800;
+       letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;line-height:1}
+.pmark.said{background:var(--ai);color:#fff}
+.pmark.inf{background:rgba(255,255,255,.94);color:var(--ai);border:1px solid rgba(62,48,71,.34)}
+.mins{display:inline-flex;align-items:center;gap:3px;background:var(--n-chip);border-radius:5px;
+      padding:3px 6px;font-size:10.5px;font-weight:700;color:#3A3B40;margin:8px 0 6px}
+.pn{font-size:14px;font-weight:600;line-height:1.3;margin:0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+.pw{font-size:12.5px;color:var(--n-3);margin:5px 0 9px}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.pp{font-size:14px;font-weight:800}
+.pp s{font-weight:500;color:var(--n-3);margin-left:4px;font-size:12.5px}
+.add{border:1px solid var(--green);background:var(--green-tint);color:var(--green);
+     font-size:13px;font-weight:800;border-radius:9px;padding:10px 15px;flex:none}
+.add:active{background:#E4F3E7}
+.step{border:1px solid var(--green);background:var(--green-tint);color:var(--green);border-radius:9px;
+      display:flex;align-items:center;padding:0;font-size:13.5px;font-weight:800;flex:none;overflow:hidden}
+.step b{padding:10px 7px;min-width:26px;text-align:center;font-size:16px;line-height:1}
+.step u{padding:10px 2px;text-decoration:none;min-width:16px;text-align:center}
+.skel{background:linear-gradient(100deg,#F2F2F2 30%,#FAFAFA 50%,#F2F2F2 70%);background-size:220% 100%;
+      animation:sweep 1.3s infinite;border-radius:14px}
+.skl{height:11px;border-radius:4px;margin-top:9px}
+@keyframes sweep{to{background-position:-220% 0}}
+
+/* substitution */
+.swp{border:1.5px solid var(--ai);border-radius:14px;background:#FBFAFC;padding:11px;display:flex;
+     flex-direction:column;min-height:267px;animation:fade .3s both}
+.swp-h{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#B4402F}
+.swp-x{font-size:12px;color:var(--n-3);margin:4px 0 9px}
+.swp-i{background:var(--n-card);border:1px solid var(--n-border);border-radius:10px;height:66px}
+.swp-n{font-size:13px;font-weight:700;line-height:1.25;margin:8px 0 0}
+.swp-r{font-size:11px;line-height:1.35;color:var(--ai);margin:4px 0 0}
+.swp-b{margin-top:auto;padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.swp-b button{font-size:12.5px;font-weight:800;border-radius:8px;padding:11px 0;width:100%}
+.b-swap{background:var(--green);color:#fff}
+.b-skip{background:#fff;color:var(--n-1);border:1px solid #D8D8D6}
+
+/* empty / conflict */
+.void{border:1px dashed #CFD0CB;border-radius:14px;padding:18px;margin-bottom:16px;text-align:center}
+.void h5{margin:0 0 5px;font-size:16px;font-weight:800}
+.void p{margin:0 0 14px;font-size:13.5px;line-height:1.5;color:var(--n-2)}
+.void button{border:1px solid var(--ai);color:var(--ai);border-radius:999px;padding:10px 18px;
+             font-size:13px;font-weight:700}
+
+/* care rows */
+.care{display:flex;flex-direction:column;gap:10px}
+.crow{display:flex;align-items:center;gap:14px;border:1px solid #E8E8E6;border-radius:16px;padding:12px 14px;
+      animation:fade .3s both}
+.cimg{width:64px;height:64px;border-radius:12px;background:var(--n-card);border:1px solid var(--n-border);flex:none}
+.cb{flex:1;min-width:0}
+.cn{font-size:16.5px;font-weight:700;margin:0;line-height:1.25}
+.cs{font-size:13px;color:var(--n-2);margin:5px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pmark.flow{position:static}
+.cstep{border:1.5px solid var(--green);background:var(--green-tint);color:var(--green);border-radius:12px;
+       display:flex;align-items:center;font-size:15px;font-weight:800;flex:none;overflow:hidden}
+.cstep b{padding:13px 9px;min-width:30px;text-align:center;font-size:18px;line-height:1}
+.cstep u{padding:13px 3px;text-decoration:none}
+
+/* arrival sync */
+.aic{border:1.5px solid var(--ai);border-radius:16px;padding:16px;margin-bottom:18px;animation:fade .3s both}
+.aic h3{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:8px 0 6px;line-height:1.25}
+.aic .exp{font-size:13.5px;line-height:1.45;color:var(--n-2);margin:0}
+.cons{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #E9E6EC;
+      border-bottom:1px solid #E9E6EC;margin:14px 0;padding:13px 0}
+.cons p{margin:0;font-size:13px;font-weight:600;line-height:1.35}
+.cons small{display:block;font-size:11.5px;font-weight:500;color:var(--n-3);margin-top:2px}
+.tog{width:50px;height:29px;border-radius:999px;background:#DCDCD8;position:relative;flex:none;
+     transition:background .2s}
+.tog i{position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;
+       box-shadow:0 1px 3px rgba(0,0,0,.22);transition:left .2s}
+.tog.on{background:var(--ai)}.tog.on i{left:24px}
+.b-sync{width:100%;font-size:14px;font-weight:800;border-radius:10px;padding:14px 0;
+        background:#EDEDEA;color:#A6A8A2;transition:background .2s,color .2s}
+.b-sync.live{background:var(--green);color:#fff}
+.ghost{display:block;width:100%;text-align:center;font-size:13.5px;font-weight:600;color:var(--n-1);
+       text-decoration:underline;text-underline-offset:3px;margin-top:14px}
+.note{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:14px;font-weight:600}
+.note.ok{background:var(--green-tint);border:1px solid #CDE7D3;color:#0B5F19}
+.note.warn{background:#FDF6E6;border:1px solid #EFDFB4;color:#7A5B10}
+.note.off{background:#F4F4F2;border:1px solid #E4E4E1;color:#5B5D57}
+.done{text-align:center;padding:26px 8px}
+.done i{display:block;width:58px;height:58px;border-radius:50%;background:var(--green-tint);
+        border:2px solid var(--green);margin:0 auto 16px;line-height:54px;color:var(--green);font-size:26px;font-style:normal}
+.done h4{margin:0 0 6px;font-size:21px;font-weight:800}
+.done p{margin:0;font-size:14px;color:var(--n-2);line-height:1.5}
+
+/* ── dock: cart above sheet, always ── */
+.dock{position:absolute;left:0;right:0;bottom:0;z-index:20;display:flex;flex-direction:column}
+.cart{margin:0 14px 10px;background:#fff;border:1px solid #EAEAE6;border-radius:16px;
+      padding:11px 11px 11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+      box-shadow:0 10px 28px rgba(20,20,18,.16);animation:fade .3s both}
+.cart b{font-size:15px;font-weight:800}
+.cart small{display:block;font-size:11.5px;font-weight:500;color:var(--n-2);margin-top:2px}
+.cart .go{background:var(--green);color:#fff;border-radius:11px;padding:13px 17px;flex:none;
+          font-size:14px;font-weight:800}
+
+.sheet{background:var(--ai);border-radius:22px 22px 0 0;padding:8px 16px 12px;position:relative;
+       box-shadow:0 -14px 34px rgba(28,20,34,.22);transition:background .3s}
+.sheet.dim{background:#615A68}
+.grab{width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.30);margin:2px auto 10px}
+.alab{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.14em;
+      text-transform:uppercase;color:var(--yellow);margin-bottom:8px}
+.hi{font-size:15px;color:#fff;margin:0 0 2px;font-weight:500}
+.q{font-size:19px;font-weight:700;letter-spacing:-.02em;color:#fff;margin:0;line-height:1.3}
+.sub{font-size:14px;line-height:1.45;color:var(--ai-sub);margin:6px 0 0}
+.demote{font-size:13px;color:rgba(255,255,255,.42);margin:0 0 10px;display:flex;align-items:center;gap:7px}
+.bubble{max-width:80%;margin:12px 0 0 auto;background:var(--ai-2);border-radius:16px 16px 4px 16px;
+        padding:11px 15px;font-size:14.5px;color:#fff;line-height:1.4}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+.chip{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--ai-line);border-radius:999px;
+      padding:9px 12px 9px 14px;font-size:12.5px;font-weight:600;color:#EFE9F2;background:rgba(255,255,255,.06)}
+.chip b{color:var(--yellow);font-weight:800;font-size:15px;line-height:1}
+.sug{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}
+.sug button{border:1px solid var(--ai-line);background:rgba(255,255,255,.07);color:#EFE9F2;
+            border-radius:999px;padding:10px 14px;font-size:13px;font-weight:600;text-align:left}
+.sug button:active{background:rgba(255,255,255,.16)}
+.inrow{display:flex;align-items:center;gap:10px;margin-top:14px;position:relative}
+/* min-width:0 — without it the text input's intrinsic width keeps the field
+   from shrinking and the mic gets pushed off a 390px screen. */
+.field{flex:1 1 0;min-width:0;height:52px;border:1px solid var(--ai-line);border-radius:999px;
+       display:flex;align-items:center;
+       gap:10px;padding:0 18px;font-size:15px;color:rgba(255,255,255,.55);background:transparent}
+.field input{flex:1;background:none;border:0;outline:none;color:#fff;font-family:inherit;font-size:15px;min-width:0}
+.field input::placeholder{color:rgba(255,255,255,.45)}
+.mic{width:52px;height:52px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;
+     justify-content:center;flex:none;position:relative;z-index:2;transition:box-shadow .2s}
+.mic.on{box-shadow:0 0 0 8px rgba(248,203,70,.24)}
+.glow{position:absolute;right:-16px;bottom:-26px;width:150px;height:150px;border-radius:50%;
+      background:radial-gradient(circle,rgba(248,203,70,.40) 0,rgba(248,203,70,.10) 45%,transparent 70%);
+      pointer-events:none;z-index:1}
+.meter{display:flex;align-items:center;gap:4px;height:36px}
+.meter i{width:4px;border-radius:2px;background:var(--yellow);animation:lv .9s ease-in-out infinite}
+@keyframes lv{0%,100%{height:8px;opacity:.55}50%{height:30px;opacity:1}}
+.live{width:9px;height:9px;border-radius:50%;background:var(--yellow);flex:none;
+      box-shadow:0 0 0 4px rgba(248,203,70,.2)}
+.word{display:inline-block;padding:1px 3px;border-radius:4px}
+.word.tapd{background:var(--yellow);color:var(--ink)}
+.scroll{max-height:min(42dvh,340px);overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:4px}
+.turn{margin-bottom:14px}
+.turn .who{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+           color:rgba(255,255,255,.38);margin-bottom:4px}
+.turn p{margin:0;font-size:14px;line-height:1.45;color:#EDE7F0}
+.turn.you{text-align:right}
+.turn.you p{display:inline-block;background:var(--ai-2);border-radius:16px 16px 4px 16px;padding:9px 14px}
+.turn.past p{color:rgba(255,255,255,.40)}
+.src{border-top:1px solid var(--ai-line);padding-top:12px;margin-bottom:12px}
+.src div{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;color:#EDE7F0;padding:7px 0}
+.src em{font-style:normal;color:var(--ai-sub);font-size:12px;flex:none}
+
+.tabs{height:calc(58px + env(safe-area-inset-bottom));flex:none;background:#fff;border-top:1px solid #EFEFEF;
+      display:flex;align-items:flex-start;padding:7px 4px env(safe-area-inset-bottom)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;
+     color:var(--n-3)}
+.tab.on{color:var(--n-1);font-weight:700}
+
+/* scenario menu */
+.mask{position:absolute;inset:0;background:rgba(20,18,22,.5);z-index:40;display:none}
+.mask.on{display:block}
+.mpanel{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;z-index:41;
+        padding:10px 18px calc(20px + env(safe-area-inset-bottom));transform:translateY(101%);
+        transition:transform .25s ease;max-height:82%;overflow-y:auto}
+.mpanel.on{transform:none}
+.mpanel h4{margin:12px 0 8px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+           color:var(--n-3)}
+.mrow{display:flex;flex-wrap:wrap;gap:8px}
+.mrow button{border:1px solid #E2E2DE;border-radius:10px;padding:12px 14px;font-size:13.5px;font-weight:700;
+             background:#fff;flex:1 1 46%;text-align:left}
+.mrow button.on{border-color:var(--ai);background:#F6F3F8;color:var(--ai)}
+.mrow button.danger{color:#B4402F;border-color:#EBD3CE}
+
+/* ── desktop: a real 390 × 844 device, scaled to fit the window ── */
+@media (min-width:560px){
+  html,body{height:100%;overflow:hidden}
+  body{background:#EDEDEB;display:flex;align-items:center;justify-content:center}
+  .app{flex:none;width:var(--ph-w);max-width:none;height:var(--ph-h);border-radius:34px;
+       box-shadow:0 0 0 9px #16171A, 0 0 0 10.5px #2E3034, 0 26px 60px rgba(20,20,18,.28);
+       transform:scale(var(--s))}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="hd" id="hd">
+    <div class="hdr">
+      <div>
+        <div class="eta-l" id="etaL">Delivery in</div>
+        <div class="eta" id="eta">8 minutes</div>
+        <div class="addr" id="addr">HOME · IIT Area, Powai ▾</div>
+      </div>
+      <button class="menu" id="menuBtn" aria-label="Scenarios">⋯</button>
+    </div>
+  </div>
+
+  <div class="feed" id="feed"></div>
+
+  <div class="dock" id="dock">
+    <div id="cartSlot"></div>
+    <div id="sheetSlot"></div>
+    <div class="tabs">
+      <div class="tab on">▲<span>Blinkit</span></div>
+      <div class="tab">▦<span>Categories</span></div>
+      <div class="tab">▤<span>Print</span></div>
+      <div class="tab">▣<span>Cart</span></div>
+    </div>
+  </div>
+
+  <div class="mask" id="mask"></div>
+  <div class="mpanel" id="mpanel">
+    <div class="grab" style="background:#DDD"></div>
+    <h4>Context</h4>
+    <div class="mrow">
+      <button data-act="mode:home">Home · Sreya</button>
+      <button data-act="mode:motion">Motion · in a cab</button>
+      <button data-act="mode:care">Care · unwell</button>
+      <button data-act="assistant">Assistant off</button>
+    </div>
+    <h4>Repair states</h4>
+    <div class="mrow">
+      <button data-act="stockout">Trigger stockout</button>
+      <button data-act="conflict">Conflicting instruction</button>
+      <button data-act="nothing">Nothing fits</button>
+      <button data-act="offline">Go offline</button>
+    </div>
+    <h4>Control</h4>
+    <div class="mrow">
+      <button data-act="audit">Open transcript</button>
+      <button data-act="why">Why these items</button>
+      <button data-act="reset" class="danger">Reset prototype</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ─────────────── catalogue ─────────────── */
+var CAT = {
+  bhujia:{n:"Haldiram's Aloo Bhujia",w:"200 g",p:52,m:62,d:"15%"},
+  lays:{n:"Lay's Magic Masala",w:"52 g",p:20},
+  paneer:{n:"Amul Malai Paneer",w:"200 g",p:89,m:99,d:"10%"},
+  dahi:{n:"Nestlé a+ Dahi",w:"400 g",p:64},
+  samosa:{n:"Samosa Premix",w:"200 g",p:52,m:62,d:"15%"},
+  marie:{n:"Britannia Marie Gold",w:"250 g",p:45,m:50,d:"10%"},
+  coconut:{n:"Tender Coconut",w:"1 pc",p:49},
+  cocojal:{n:"Cocojal Coconut Water",w:"200 ml",p:45},
+  peri:{n:"Haldiram's Peri Peri Namkeen",w:"150 g",p:58},
+  rose:{n:"Amul Kool Rose Milk",w:"180 ml",p:25},
+  papdi:{n:"Bikano Soan Papdi",w:"250 g",p:88,m:100,d:"12%"},
+  para:{n:"Paracetamol 650",w:"Strip of 10",p:32},
+  electral:{n:"Electral Orange",w:"200 ml",p:40},
+  coldpack:{n:"Instant Cold Pack",w:"Reusable gel",p:99},
+  eyemask:{n:"Sleep Eye Mask",w:"Soft contour",p:76},
+  milk:{n:"Amul Taaza Milk",w:"500 ml",p:28},
+  bread:{n:"Brown Bread",w:"400 g",p:45},
+  butter:{n:"Amul Butter",w:"100 g",p:62},
+  banana:{n:"Robusta Banana",w:"6 pcs",p:42}
+};
+var SHELF = {
+  home:["bhujia","lays","paneer","dahi"],
+  sweet:["rose","papdi","paneer","dahi"],
+  motion:["milk","bread","butter","banana"]
+};
+
+/* ─────────────── state ─────────────── */
+var S, T = [];
+function fresh(){
+  return {
+    mode:"home", assistantOn:true, offline:false,
+    sheet:"idle",           // idle | listen | say | audit | why | fix
+    msg:null, demote:null, bubble:null,
+    feed:"shelf",           // shelf | composing | composed | care | motion | empty | placed
+    shelf:"home",
+    cart:{}, mark:{}, order:[],
+    chips:[], turns:[],
+    swap:null, consent:"off", synced:false,
+    transcript:"", fixWord:-1, greeted:false
+  };
+}
+function save(){ try{ sessionStorage.setItem("bk", JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{ var r = sessionStorage.getItem("bk"); if(r) return JSON.parse(r); }catch(e){}
+  return null;
+}
+S = load() || fresh();
+
+/* ─────────────── helpers ─────────────── */
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function money(n){ return "₹" + n; }
+function cartCount(){ var t=0; for(var k in S.cart) t += S.cart[k]; return t; }
+function cartTotal(){ var t=0; for(var k in S.cart) t += S.cart[k]*CAT[k].p; return t; }
+function addItem(id, qty, src){
+  S.cart[id] = (S.cart[id]||0) + (qty||1);
+  if(src) S.mark[id] = src;
+  if(S.order.indexOf(id) < 0) S.order.push(id);
+}
+function say(who, text){ S.turns.push({who:who, text:text}); }
+
+/* ─────────────── product card ─────────────── */
+function cardHTML(id){
+  var c = CAT[id], q = S.cart[id]||0, mk = S.mark[id];
+  var badge = c.d ? '<div class="badge">'+c.d+'<br>OFF</div>' : '';
+  var mark = (q && mk) ? '<div class="pmark '+(mk==="said"?"said":"inf")+'">'+
+             (mk==="said"?"You said":"Usually")+'</div>' : '';
+  var act = q
+    ? '<div class="step"><u data-dec="'+id+'">−</u><b>'+q+'</b><u data-inc="'+id+'">+</u></div>'
+    : '<button class="add" data-add="'+id+'">ADD</button>';
+  var price = money(c.p) + (c.m ? ' <s>'+money(c.m)+'</s>' : '');
+  return '<div class="pc"><div class="pimg">'+badge+mark+'</div>'+
+    '<div class="mins">⚡ 8 MINS</div>'+
+    '<p class="pn">'+esc(c.n)+'</p><div class="pw">'+esc(c.w)+'</div>'+
+    '<div class="prow"><div class="pp">'+price+'</div>'+act+'</div></div>';
+}
+function skelHTML(){
+  return '<div class="pc"><div class="pimg skel"></div>'+
+    '<div class="skel skl" style="width:52px"></div>'+
+    '<div class="skel skl" style="width:92%"></div>'+
+    '<div class="skel skl" style="width:58%"></div></div>';
+}
+
+/* ─────────────── feed ─────────────── */
+function renderFeed(){
+  var h = "";
+  if(S.offline) h += '<div class="note off">Assistant is offline. Everything else works — you can shop as usual.</div>';
+  if(!S.assistantOn && !S.offline)
+    h += '<div class="srch">🔍 Search "aloo bhujia"</div>';
+
+  if(S.feed === "motion"){
+    h += arrivalHTML();
+    h += '<div class="sec"><h4>Also in your cart</h4><span>Edit</span></div>';
+    h += '<div class="grid">' + SHELF.motion.map(cardHTML).join("") + '</div>';
+  }
+  else if(S.feed === "placed"){
+    h += '<div class="done"><i>✓</i><h4>Order placed</h4>'+
+         '<p>Arriving in 8 minutes.<br>Leave at door · no call, no bell.</p></div>';
+  }
+  else if(S.feed === "care"){
+    h += narHTML("Simplified the screen and packed the essentials",
+                 "Four things added · " + money(cartTotal()));
+    h += provHTML("Composed layout");
+    h += '<div class="care">' + S.order.map(function(id){
+      var c = CAT[id], q = S.cart[id]||0, mk = S.mark[id]||"usually";
+      return '<div class="crow"><div class="cimg"></div><div class="cb">'+
+        '<p class="cn">'+esc(c.n)+'</p>'+
+        '<p class="cs">'+esc(c.w)+' · '+money(c.p)+
+        ' <span class="pmark flow '+(mk==="said"?"said":"inf")+'">'+
+        (mk==="said"?"You said":"Usually")+'</span></p></div>'+
+        '<div class="cstep"><u data-dec="'+id+'">−</u><b>'+q+'</b><u data-inc="'+id+'">+</u></div></div>';
+    }).join("") + '</div>';
+  }
+  else if(S.feed === "empty"){
+    h += narHTML("Checked everything inside your limit", "Nothing fits — here is why");
+    h += '<div class="void"><h5>No match under that constraint</h5>'+
+         '<p>Nothing in the catalogue meets it and still arrives in 8 minutes. I have not added anything.</p>'+
+         '<button data-act="relax">Relax the constraint</button></div>';
+    h += '<div class="sec"><h4>Closest instead</h4><span>See all</span></div>';
+    h += '<div class="grid">' + ["lays","bhujia"].map(cardHTML).join("") + '</div>';
+  }
+  else if(S.feed === "composing"){
+    h += narHTML("Checking what can be delivered the quickest",
+                 'Building a tray for 20 minutes<span class="dots"><i></i><i></i><i></i></span>');
+    h += '<div class="grid">' + cardHTML("samosa") + skelHTML() + skelHTML() + skelHTML() + '</div>';
+  }
+  else if(S.feed === "composed"){
+    h += narHTML(S.narA || "Everything here arrives in 8 minutes", S.narB || "Added to your cart");
+    h += provHTML("Added by assistant");
+    var cells = S.order.map(function(id){
+      if(S.swap && S.swap.out === id) return swapHTML();
+      return cardHTML(id);
+    });
+    h += '<div class="grid">' + cells.join("") + '</div>';
+  }
+  else {
+    var title = S.shelf === "sweet" ? "Sweet cravings" : "Snacks &amp; namkeen";
+    h += '<div class="sec"><h4>'+title+'</h4><span>See all</span></div>';
+    h += '<div class="grid">' + SHELF[S.shelf === "sweet" ? "sweet" : "home"].map(cardHTML).join("") + '</div>';
+  }
+  $("feed").innerHTML = h;
+}
+function narHTML(a, b){
+  return '<div class="nar"><p class="l1">'+a+'</p><p class="l2">'+b+'</p></div>';
+}
+function provHTML(label){
+  return '<div class="prov"><span class="pv">✦ '+label+'</span>'+
+         '<button class="why" data-act="why">Why am I seeing this?</button></div>';
+}
+function swapHTML(){
+  var out = CAT[S.swap.out], inn = CAT[S.swap.in];
+  return '<div class="swp"><div class="swp-h">Out of stock</div>'+
+    '<p class="swp-x"><s>'+esc(out.n)+'</s></p><div class="swp-i"></div>'+
+    '<p class="swp-n">'+esc(inn.n)+'</p>'+
+    '<p class="swp-r">Same size · '+money(out.p-inn.p)+' less · you bought this in June</p>'+
+    '<div class="swp-b"><button class="b-swap" data-act="doswap">Swap</button>'+
+    '<button class="b-skip" data-act="skip">Skip item</button></div></div>';
+}
+function arrivalHTML(){
+  if(S.consent === "revoked")
+    h0 = '<div class="note warn">Location sharing ended. Delivery is back to as soon as possible.</div>';
+  else h0 = "";
+  if(S.synced)
+    return h0 + '<div class="note ok">Synced. Your order will land at 9:58, when your cab does. '+
+      'Location sharing ends automatically in 35 minutes.</div>'+
+      '<div class="aic"><span class="pv">✦ Arrival sync · live</span>'+
+      '<h3>Landing with you at 9:58</h3>'+
+      '<p class="exp">Nothing waits on a doorstep. You can stop this at any point.</p>'+
+      '<button class="ghost" data-act="revoke">Stop sharing and deliver now</button></div>';
+  return h0 + '<div class="aic"><span class="pv">✦ Arrival sync</span>'+
+    '<h3>Land it when your cab does</h3>'+
+    '<p class="exp">Your cab reaches Andheri at 9:58. As it stands the order arrives 9:41 — seventeen '+
+    'minutes before you, on a doorstep nobody is at.</p>'+
+    '<div class="cons"><p>Share live location for 35 minutes'+
+    '<small>Ends automatically. Revoke any time.</small></p>'+
+    '<div class="tog'+(S.consent==="on"?" on":"")+'" data-act="consent"><i></i></div></div>'+
+    '<button class="b-sync'+(S.consent==="on"?" live":"")+'" data-act="sync">Sync to arrival</button>'+
+    '<button class="ghost" data-act="asap">Deliver ASAP instead</button></div>';
+}
+var h0 = "";
+
+/* ─────────────── cart bar ─────────────── */
+function renderCart(){
+  var n = cartCount();
+  if(!n){ $("cartSlot").innerHTML = ""; return; }
+  var pending = S.swap ? "1 item waiting on you" : "Arriving in 8 minutes";
+  var label = S.mode === "care"
+    ? '<b>Place order · '+money(cartTotal())+'</b><small>Leave at door · no call, no bell</small>'
+    : '<b>'+n+' item'+(n>1?"s":"")+' · '+money(cartTotal())+'</b><small>'+pending+'</small>';
+  var btn = S.mode === "care" ? "Confirm" : "View cart";
+  $("cartSlot").innerHTML = '<div class="cart"><div>'+label+'</div>'+
+    '<button class="go" data-act="checkout">'+btn+' ›</button></div>';
+}
+
+/* ─────────────── sheet ─────────────── */
+function chipsHTML(){
+  if(!S.chips.length) return "";
+  return '<div class="chips">' + S.chips.map(function(c,i){
+    return '<span class="chip">'+esc(c)+'<b data-chip="'+i+'">×</b></span>';
+  }).join("") + '</div>';
+}
+function inputHTML(ph){
+  return '<div class="inrow"><div class="glow"></div>'+
+    '<div class="field"><input id="ti" placeholder="'+(ph||"Ask or type")+'" '+
+    'autocomplete="off" autocorrect="off" enterkeyhint="send"></div>'+
+    '<button class="mic" id="mic" aria-label="Talk">🎙</button></div>';
+}
+var SUGS = {
+  home:["Guest aa rahe hain, 20 minutes mein","Going for the Thursday usual",
+        "5 log hain, spicy pasand hai","I have a bad headache"],
+  motion:["I'm in a cab to Andheri","Deliver when I get there"],
+  care:["I have a bad headache","Something for a cold"]
+};
+function sugHTML(){
+  var list = SUGS[S.mode] || SUGS.home;
+  return '<div class="sug">' + list.map(function(t){
+    return '<button data-sug="'+esc(t)+'">'+esc(t)+'</button>';
+  }).join("") + '</div>';
+}
+function renderSheet(){
+  if(!S.assistantOn){ $("sheetSlot").innerHTML = ""; return; }
+  var b = "", dim = S.offline ? " dim" : "";
+  if(S.offline){
+    b = '<div class="grab"></div><div class="alab">✦ Assistant</div>'+
+        '<p class="q">Offline</p><p class="sub">I cannot reach the assistant right now. '+
+        'Shopping still works normally.</p>';
+    $("sheetSlot").innerHTML = '<div class="sheet'+dim+'">'+b+'</div>';
+    return;
+  }
+  if(S.sheet === "listen"){
+    b = '<div class="grab" data-act="collapse"></div><div class="alab">✦ Listening</div>'+
+        (S.transcript
+          ? '<p class="q" style="font-weight:600">'+wordsHTML()+'</p>'+
+            '<p class="sub">Tap any word to fix it</p>'
+          : '<p class="q">Say it — or tap one below</p>') +
+        sugHTML() +
+        '<div class="inrow"><div class="glow"></div>'+
+        '<div class="field" style="border-color:transparent;padding-left:8px"><div class="meter">'+
+        Array.apply(null,Array(12)).map(function(_,i){
+          return '<i style="animation-delay:'+(i*0.07)+'s"></i>'; }).join("")+
+        '</div></div><button class="mic on" id="mic">■</button></div>';
+  }
+  else if(S.sheet === "fix"){
+    b = '<div class="grab" data-act="collapse"></div><div class="alab">✦ Fix a word</div>'+
+        '<p class="q" style="font-weight:600">'+wordsHTML()+'</p>'+
+        '<p class="sub">Tap the right one, or say it again.</p>'+
+        '<div class="sug">'+["twenty","thirty","ten"].map(function(w){
+          return '<button data-fix="'+w+'">'+w+'</button>'; }).join("")+
+        '<button data-act="sendfix">Use this</button></div>' + inputHTML();
+  }
+  else if(S.sheet === "audit"){
+    b = '<div class="grab" data-act="collapse"></div><div class="alab">✦ This session</div>'+
+        '<div class="scroll">' + (S.turns.length
+          ? S.turns.map(function(t){
+              if(t.who === "you") return '<div class="turn you"><p>'+esc(t.text)+'</p></div>';
+              return '<div class="turn'+(t.who==="past"?" past":"")+'">'+
+                '<div class="who">Assistant'+(t.who==="past"?" · set aside":"")+'</div>'+
+                '<p>'+esc(t.text)+'</p></div>';
+            }).join("")
+          : '<div class="turn"><p>Nothing yet this session.</p></div>') + '</div>' +
+        chipsHTML() + inputHTML();
+  }
+  else if(S.sheet === "why"){
+    var rows = S.order.length ? S.order.map(function(id){
+      var src = S.mark[id] === "said" ? "you said it" : "you buy it with this";
+      return '<div><span>'+esc(CAT[id].n)+'</span><em>'+src+'</em></div>';
+    }).join("") : '<div><span>Nothing composed yet.</span><em>—</em></div>';
+    b = '<div class="grab" data-act="collapse"></div><div class="alab">✦ Where each item came from</div>'+
+        '<div class="scroll"><div class="src">'+rows+'</div></div>'+
+        '<p class="sub">Anything marked “you said” came from your own words. Everything else came from '+
+        'your order history, and you can remove it in one tap.</p>' + inputHTML();
+  }
+  else if(S.sheet === "say"){
+    b = '<div class="grab" data-act="audit"></div>' +
+        (S.demote ? '<p class="demote">↓ <s>'+esc(S.demote)+'</s></p>' : "") +
+        (S.bubble ? '<div class="bubble">'+esc(S.bubble)+'</div>' : "") +
+        (S.msg && S.msg.hi ? '<p class="hi">'+esc(S.msg.hi)+'</p>' : "") +
+        (S.msg ? '<p class="q"'+(S.bubble?' style="margin-top:14px"':"")+'>'+esc(S.msg.q)+'</p>' : "") +
+        (S.msg && S.msg.sub ? '<p class="sub">'+esc(S.msg.sub)+'</p>' : "") +
+        chipsHTML() + inputHTML();
+  }
+  else {
+    b = '<div class="grab" data-act="audit"></div>' + chipsHTML() +
+        inputHTML(S.mode === "motion" ? "Hold to talk" :
+                  S.mode === "care" ? "Just say it — I'm listening" : "Ask or type");
+  }
+  $("sheetSlot").innerHTML = '<div class="sheet'+dim+'">'+b+'</div>';
+}
+function wordsHTML(){
+  return S.transcript.split(/\s+/).map(function(w,i){
+    return '<span class="word'+(i===S.fixWord?" tapd":"")+'" data-w="'+i+'">'+esc(w)+'</span>';
+  }).join(" ");
+}
+
+/* ─────────────── chrome ─────────────── */
+function renderHead(){
+  $("hd").className = "hd" + (S.offline ? " dim" : "");
+  if(S.mode === "motion"){
+    $("etaL").textContent = "Arriving with you";
+    $("eta").textContent  = S.synced ? "9:58 am" : "9:41 am";
+    $("addr").textContent = "IN TRANSIT · to Andheri West ▾";
+  } else if(S.mode === "care"){
+    $("etaL").textContent = "Delivery in";
+    $("eta").textContent  = "8 minutes";
+    $("addr").textContent = "HOME · Kalyani Nagar ▾";
+  } else {
+    $("etaL").textContent = "Delivery in";
+    $("eta").textContent  = "8 minutes";
+    $("addr").textContent = "HOME · IIT Area, Powai ▾";
+  }
+}
+function measure(){
+  var d = $("dock");
+  document.documentElement.style.setProperty("--dock", d.offsetHeight + "px");
+}
+/* Desktop only: shrink the whole 390 × 844 device so it always fits the
+   window. On a phone the app simply fills the viewport, as it should. */
+function fitApp(){
+  var s = 1;
+  if(window.innerWidth >= 560){
+    s = Math.min(1, (window.innerHeight - 56) / 844);
+    if(s < .35) s = .35;
+  }
+  document.documentElement.style.setProperty("--s", s);
+}
+function render(){
+  renderHead(); renderFeed(); renderCart(); renderSheet();
+  requestAnimationFrame(measure); save();
+}
+
+/* ─────────────── conversation ─────────────── */
+function assistant(q, sub, hi){
+  S.msg = {q:q, sub:sub, hi:hi}; S.sheet = "say"; say("ai", q + (sub ? " " + sub : ""));
+}
+function greet(){
+  if(S.greeted) return;
+  S.greeted = true;
+  assistant("Going for the Thursday usual?", "Six items ready. Say “show me” to review.", "Hi Sreya!");
+  render();
+}
+function interpret(text){
+  var t = text.toLowerCase();
+  S.bubble = text; say("you", text);
+
+  if(/head\s*ache|headache|unwell|not well|sick|fever/.test(t))  return careFlow();
+  if(/cab|andheri|transit|travell?ing|on my way/.test(t))        return motionFlow();
+  if(/thursday|usual|show me|haan|yes\b/.test(t))                return usualFlow();
+  if(/guest|aa rahe|coming over|people over|20 min|twenty min/.test(t)) return guestFlow();
+
+  var num = t.match(/(\d+)\s*(people|log|guests?|of us)/) ||
+            t.match(/^(\d+)\b/) ||
+            (/\bfive\b/.test(t) ? [0,"5"] : null);
+  if(num && Object.keys(S.cart).length) return scaleFlow(parseInt(num[1],10), /spicy|teekha|hot/.test(t));
+
+  if(/cheap|budget|under\s*₹?\s*\d+|sasta/.test(t)){
+    if(S.chips.indexOf("20-min guest") >= 0) return conflictFlow();
+    return nothingFlow();
+  }
+  if(/nothing|impossible|under ₹?5\b/.test(t)) return nothingFlow();
+
+  assistant("I did not catch that.", "Try one of the suggestions, or tell me who is coming and when.");
+  S.sheet = "listen"; render();
+}
+function usualFlow(){
+  S.demote = null; S.feed = "composing"; S.sheet = "idle"; render();
+  setTimeout(function(){
+    ["samosa","marie","coconut","paneer","bhujia","dahi"].forEach(function(id){ addItem(id,1,"usually"); });
+    S.feed = "composed";
+    S.narA = "Your Thursday list, all inside 8 minutes";
+    S.narB = "Six items added";
+    say("ai","Added the Thursday list — six items, " + money(cartTotal()) + ".");
+    S.sheet = "idle"; render();
+  }, 1100);
+}
+function guestFlow(){
+  if(S.msg) S.demote = "Thursday usual · set aside";
+  if(S.turns.length) S.turns[0].who = "past";
+  S.chips = ["20-min guest"];
+  assistant("Dropping the Thursday list.", "Going for things that land inside 20 minutes.");
+  render();
+  setTimeout(function(){
+    S.feed = "composing"; S.bubble = null; S.sheet = "idle"; render();
+    setTimeout(function(){
+      addItem("samosa",2,"usually"); addItem("coconut",4,"usually"); addItem("marie",1,"usually");
+      S.feed = "composed";
+      S.narA = "Everything here arrives in 8 minutes";
+      S.narB = "Samosa, biscuits and tender coconut added";
+      say("ai","Added samosa premix, Marie Gold and tender coconut — all inside 8 minutes.");
+      render();
+      setTimeout(function(){
+        assistant("May I know how many guests?","I have packed for 2. Tell me the count and I will fix the quantities.");
+        render();
+      }, 900);
+    }, 1200);
+  }, 700);
+}
+function scaleFlow(n, spicy){
+  n = Math.max(1, Math.min(20, n));
+  S.cart.samosa = n; S.cart.coconut = n; S.cart.marie = Math.max(1, Math.ceil(n/2));
+  if(spicy) addItem("peri", 2, "said");
+  S.chips = S.chips.filter(function(c){ return c.indexOf("guests") < 0; });
+  S.chips.push(n + " guests" + (spicy ? " · spicy" : ""));
+  S.feed = "composed";
+  S.narA = "Scaled for " + n + (spicy ? " · added something spicier" : "");
+  S.narB = "Cart is now " + cartCount() + " items";
+  say("ai","Scaled to " + n + (spicy ? " and added peri peri namkeen" : "") +
+      ". Cart is now " + cartCount() + " items, " + money(cartTotal()) + ".");
+  S.bubble = null; S.msg = null; S.sheet = "idle"; render();
+}
+function careFlow(){
+  S.mode = "care"; S.cart = {}; S.order = []; S.mark = {};
+  addItem("para",1,"said"); addItem("electral",2,"usually");
+  addItem("coldpack",1,"usually"); addItem("eyemask",1,"usually");
+  S.chips = ["Care mode · headache"];
+  S.feed = "care"; S.bubble = null; S.msg = null; S.sheet = "idle";
+  say("ai","Simplified the screen and packed four essentials, " + money(cartTotal()) + ".");
+  render();
+}
+function motionFlow(){
+  S.mode = "motion"; S.feed = "motion"; S.cart = {}; S.order = []; S.mark = {};
+  addItem("milk",2,"usually"); addItem("bread",1,"usually"); addItem("butter",1,"usually");
+  S.bubble = null; S.msg = null; S.sheet = "idle";
+  say("ai","You are in transit. I can time the delivery to your arrival instead of racing it.");
+  render();
+}
+function conflictFlow(){
+  assistant("Those two pull against each other.",
+            "“Cheapest” and “inside 20 minutes” do not overlap here. Which should I keep?");
+  S.sheet = "say"; render();
+  setTimeout(function(){
+    var el = document.querySelector(".sheet .sub");
+    if(!el) return;
+    el.insertAdjacentHTML("afterend",
+      '<div class="sug"><button data-keep="fast">Keep 20 minutes</button>'+
+      '<button data-keep="cheap">Keep cheapest</button></div>');
+  }, 60);
+}
+function nothingFlow(){
+  S.feed = "empty"; S.bubble = null;
+  assistant("Nothing fits that.","I have added nothing rather than guess.");
+  S.sheet = "idle";
+  say("ai","Nothing in the catalogue meets that and still arrives in 8 minutes. Added nothing.");
+  render();
+}
+function stockout(){
+  var victim = S.cart.coconut ? "coconut" : S.order[S.order.length-1];
+  if(!victim){ toastNeeded(); return; }
+  S.swap = {out:victim, in:"cocojal"};
+  var q = S.cart[victim] || 1;
+  delete S.cart[victim];
+  S.swap.qty = q;
+  S.feed = "composed";
+  S.narA = CAT[victim].n + " just went out of stock";
+  S.narB = "One swap ready · nothing else changed";
+  say("ai", CAT[victim].n + " went out of stock. One swap ready, nothing else changed.");
+  render();
+}
+function toastNeeded(){
+  assistant("Add something first.","Ask me for a basket, then trigger the stockout.");
+  render();
+}
+
+/* ─────────────── speech ─────────────── */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, listening = false;
+function startListen(){
+  S.sheet = "listen"; S.transcript = ""; S.fixWord = -1; render();
+  if(!SR) return;                       // fallback: suggestion chips only
+  try{
+    rec = new SR();
+    rec.lang = "en-IN"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onresult = function(e){
+      var txt = "";
+      for(var i=0;i<e.results.length;i++) txt += e.results[i][0].transcript;
+      S.transcript = txt.trim(); renderSheet(); measure();
+    };
+    rec.onerror = function(){ listening = false; };
+    rec.onend = function(){
+      listening = false;
+      if(S.transcript) interpret(S.transcript); else renderSheet();
+    };
+    rec.start(); listening = true;
+  }catch(e){ listening = false; }
+}
+function stopListen(){
+  if(rec && listening){ try{ rec.stop(); }catch(e){} return; }
+  if(S.transcript) interpret(S.transcript);
+  else { S.sheet = "idle"; render(); }
+}
+
+/* ─────────────── events ─────────────── */
+document.addEventListener("click", function(e){
+  var t = e.target, el;
+
+  if(t.id === "mic" || (el = t.closest && t.closest("#mic"))){
+    if(S.sheet === "listen") stopListen(); else startListen();
+    return;
+  }
+  el = t.closest ? t.closest("[data-add],[data-inc],[data-dec],[data-act],[data-sug],[data-chip],[data-w],[data-fix],[data-keep]") : null;
+  if(!el) return;
+  var d = el.dataset;
+
+  if(d.add){ addItem(d.add,1,null); render(); return; }
+  if(d.inc){ S.cart[d.inc]++; render(); return; }
+  if(d.dec){
+    S.cart[d.dec]--;
+    if(S.cart[d.dec] <= 0){ delete S.cart[d.dec];
+      S.order = S.order.filter(function(x){ return x !== d.dec; }); }
+    render(); return;
+  }
+  if(d.sug){ S.sheet = "say"; interpret(d.sug); return; }
+  if(d.chip !== undefined){ S.chips.splice(+d.chip,1); render(); return; }
+  if(d.w !== undefined){ S.fixWord = +d.w; S.sheet = "fix"; render(); return; }
+  if(d.fix){
+    var ws = S.transcript.split(/\s+/);
+    if(S.fixWord >= 0) ws[S.fixWord] = d.fix;
+    S.transcript = ws.join(" "); renderSheet(); return;
+  }
+  if(d.keep){
+    S.chips = d.keep === "fast" ? ["20-min guest"] : ["cheapest first"];
+    assistant("Keeping " + (d.keep === "fast" ? "the 20-minute limit." : "cheapest first."),
+              "The other constraint is dropped, not hidden — it is in the transcript.");
+    render(); return;
+  }
+
+  switch(d.act){
+    case "why":      S.sheet = "why"; render(); break;
+    case "audit":    S.sheet = S.sheet === "audit" ? "idle" : "audit"; render(); break;
+    case "collapse": S.sheet = "idle"; render(); break;
+    case "sendfix":  interpret(S.transcript); break;
+    case "relax":    S.chips = []; usualFlow(); break;
+    case "doswap":
+      addItem(S.swap.in, S.swap.qty, "usually");
+      S.order = S.order.map(function(x){ return x === S.swap.out ? S.swap.in : x; });
+      say("ai","Swapped in " + CAT[S.swap.in].n + ".");
+      S.swap = null; S.narA = "Swap applied"; S.narB = "Cart is back to " + cartCount() + " items"; render(); break;
+    case "skip":
+      S.order = S.order.filter(function(x){ return x !== S.swap.out; });
+      say("ai","Skipped it. I will remember you would rather go without than substitute.");
+      S.swap = null; S.narA = "Item skipped"; S.narB = "Cart is now " + cartCount() + " items"; render(); break;
+    case "consent":  S.consent = S.consent === "on" ? "off" : "on"; render(); break;
+    case "sync":
+      if(S.consent !== "on"){
+        assistant("I need location first.","The toggle above stays yours — I will not turn it on for you.");
+        render(); break;
+      }
+      S.synced = true; say("ai","Synced. Delivery will land at 9:58 with your cab."); render(); break;
+    case "revoke":
+      S.synced = false; S.consent = "revoked";
+      say("ai","Stopped sharing. Delivery reverted to as soon as possible."); render(); break;
+    case "asap":
+      S.synced = false; S.consent = "off";
+      say("ai","Keeping it as soon as possible."); render(); break;
+    case "checkout":
+      if(S.mode === "care"){ S.feed = "placed"; S.cart = {}; S.order = []; S.sheet = "idle"; render(); }
+      else { S.feed = "shelf"; S.shelf = "sweet"; S.sheet = "idle"; S.msg = null; S.bubble = null; render(); }
+      break;
+    /* scenario menu */
+    case "mode:home":  S = Object.assign(fresh(), {greeted:true}); render(); closeMenu(); greetSoon(); break;
+    case "mode:motion":motionFlow(); closeMenu(); break;
+    case "mode:care":  careFlow(); closeMenu(); break;
+    case "assistant":  S.assistantOn = !S.assistantOn; render(); closeMenu(); break;
+    case "offline":    S.offline = !S.offline; render(); closeMenu(); break;
+    case "stockout":   stockout(); closeMenu(); break;
+    case "conflict":
+      if(S.chips.indexOf("20-min guest") < 0) S.chips.push("20-min guest");
+      conflictFlow(); closeMenu(); break;
+    case "nothing":    nothingFlow(); closeMenu(); break;
+    case "reset":      S = fresh(); render(); closeMenu(); setTimeout(greet, 900); break;
+  }
+});
+function greetSoon(){ S.greeted = false; setTimeout(greet, 700); }
+
+document.addEventListener("keydown", function(e){
+  if(e.key !== "Enter") return;
+  var i = $("ti"); if(!i || document.activeElement !== i) return;
+  var v = i.value.trim(); if(!v) return;
+  i.value = ""; i.blur(); S.sheet = "say"; interpret(v);
+});
+
+/* menu */
+function openMenu(){ $("mask").classList.add("on"); $("mpanel").classList.add("on"); }
+function closeMenu(){ $("mask").classList.remove("on"); $("mpanel").classList.remove("on"); }
+$("menuBtn").addEventListener("click", openMenu);
+$("mask").addEventListener("click", closeMenu);
+
+window.addEventListener("resize", function(){ measure(); fitApp(); });
+window.addEventListener("orientationchange", function(){ measure(); fitApp(); });
+fitApp();
+render();
+setTimeout(greet, 1200);
+</script>
+</body>
+</html>
